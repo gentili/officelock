@@ -13,6 +13,7 @@ from curses import (
     COLOR_WHITE,
 )
 from time import sleep
+from datetime import datetime, timedelta
 
 fig_large = Figlet(
     font="cyberlarge",
@@ -23,7 +24,7 @@ fig_small = Figlet(
     justify="center",
 )
 def main(stdscr):
-    curses.halfdelay(50)
+    curses.halfdelay(1)
     curses.init_pair(1, COLOR_GREEN, COLOR_BLACK)
     GREEN = curses.color_pair(1)
     curses.init_pair(2, COLOR_WHITE, COLOR_RED)
@@ -45,24 +46,23 @@ def main(stdscr):
 
         # Passcode entry loop
         passcode = ""
+        starttime = datetime.now()
         while True:
-            while True:
+            char = ''
+            while not char:
                 try:
                     char = stdscr.getkey()
-                    break;
+                    starttime = datetime.now()
                 except curses.error as e:
-                    if passcode:
+                    td = datetime.now() - starttime
+                    if passcode and td > timedelta(seconds=5):
                         passcode = "TIMEOUT"
                         char = '\n'
-                        break;
             if char == '\n':
                 break;
             if char == 'KEY_BACKSPACE':
                 if len(passcode) > 0:
                     passcode = passcode[:-1]
-                    curpos = stdscr.getyx()
-                    stdscr.addstr(curpos[0],curpos[1]-4,"    ")
-                    stdscr.move(curpos[0],curpos[1]-4)
             elif len(char) > 1:
                 curpos = stdscr.getyx()
                 maxyx = stdscr.getmaxyx()
@@ -70,26 +70,41 @@ def main(stdscr):
                 stdscr.move(curpos[0],curpos[1])
             else:
                 passcode = passcode + char
-                stdscr.addstr(" <*>")
+
+            curpos = stdscr.getyx()
+            maxyx = stdscr.getmaxyx()
+            stdscr.move(curpos[0],0)
+            stdscr.clrtoeol()
+            starstr = ""
+            for i in range(len(passcode)):
+                starstr = starstr + " <*>"
+            starstr = starstr.lstrip()
+            if len(starstr) > maxyx[1]:
+                passcode = "TOOLONG"
+                break;
+            stdscr.addstr(curpos[0],
+                          int((maxyx[1] - len(starstr))/2),
+                          starstr)
             stdscr.refresh()
 
         # Check the passcode and act accordingly
         stdscr.clear()
+        def errscreen(message):
+            stdscr.bkgd(' ', ERROR)
+            stdscr.addstr(0,0,fig_large.renderText("ACCESS DENIED"),ERROR)
+            stdscr.addstr(fig_small.renderText(message),ERROR)
+
         if passcode == "6858":
             stdscr.bkgd(' ', SUCCESS)
             stdscr.addstr(0,0,fig_large.renderText("ACCESS GRANTED"),SUCCESS)
+        elif passcode == "TOOLONG":
+            errscreen("CODE TOO LONG")
         elif passcode == "TIMEOUT":
-            stdscr.bkgd(' ', ERROR)
-            stdscr.addstr(0,0,fig_large.renderText("ACCESS DENIED"),ERROR)
-            stdscr.addstr(fig_small.renderText("ENTRY TIMEOUT"),ERROR)
+            errscreen("ENTRY TIMEOUT")
         elif not passcode:
-            stdscr.bkgd(' ', ERROR)
-            stdscr.addstr(0,0,fig_large.renderText("ACCESS DENIED"),ERROR)
-            stdscr.addstr(fig_small.renderText("NO CODE ENTERED"),ERROR)
+            errscreen("NO CODE ENTERED")
         else:
-            stdscr.bkgd(' ', ERROR)
-            stdscr.addstr(0,0,fig_large.renderText("ACCESS DENIED"),ERROR)
-            stdscr.addstr(fig_small.renderText("INVALID CODE"),ERROR)
+            errscreen("INVALID CODE")
         stdscr.refresh()
         sleep(2)
 
