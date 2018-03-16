@@ -12,6 +12,7 @@ from curses import (
     COLOR_YELLOW,
     COLOR_WHITE,
 )
+from subprocess import Popen, DEVNULL
 from time import sleep
 from datetime import datetime, timedelta
 
@@ -23,6 +24,14 @@ fig_small = Figlet(
     font="cybersmall",
     justify="center",
 )
+
+def playsound(soundname):
+    Popen(["aplay", "sounds/{}.wav".format(soundname)],
+          stdin=DEVNULL,
+          stdout=DEVNULL,
+          stderr=DEVNULL,
+          )
+
 def main(stdscr):
     curses.halfdelay(1)
     curses.init_pair(1, COLOR_GREEN, COLOR_BLACK)
@@ -31,6 +40,7 @@ def main(stdscr):
     ERROR = curses.color_pair(2) | A_BOLD
     curses.init_pair(3, COLOR_WHITE, COLOR_GREEN)
     SUCCESS = curses.color_pair(3) | A_BOLD
+    playsound('startup')
     while True:
         stdscr.bkgd(' ', 0)
         stdscr.clear()
@@ -63,13 +73,16 @@ def main(stdscr):
             if char == 'KEY_BACKSPACE':
                 if len(passcode) > 0:
                     passcode = passcode[:-1]
+                playsound('keypress')
             elif len(char) > 1:
                 curpos = stdscr.getyx()
                 maxyx = stdscr.getmaxyx()
                 stdscr.addstr(maxyx[0]-1,int(maxyx[1]/2)-6,"INVALID KEY",ERROR)
                 stdscr.move(curpos[0],curpos[1])
+                playsound('warning')
             else:
                 passcode = passcode + char
+                playsound('keypress')
 
             curpos = stdscr.getyx()
             maxyx = stdscr.getmaxyx()
@@ -95,15 +108,24 @@ def main(stdscr):
             stdscr.addstr(fig_small.renderText(message),ERROR)
 
         if passcode == "6858":
+            playsound('accessgranted')
             stdscr.bkgd(' ', SUCCESS)
             stdscr.addstr(0,0,fig_large.renderText("ACCESS GRANTED"),SUCCESS)
+
         elif passcode == "TOOLONG":
+            playsound('error')
             errscreen("CODE TOO LONG")
+
         elif passcode == "TIMEOUT":
+            playsound('error')
             errscreen("ENTRY TIMEOUT")
+
         elif not passcode:
+            playsound('error')
             errscreen("NO CODE ENTERED")
+
         else:
+            playsound('invalidcode')
             errscreen("INVALID CODE")
         stdscr.refresh()
         sleep(2)
