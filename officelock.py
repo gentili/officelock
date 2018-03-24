@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from pyfiglet import Figlet, figlet_format
+from pyfiglet import Figlet, figlet_format, print_figlet
 import getpass
 import curses
 from curses import (
@@ -12,7 +12,7 @@ from curses import (
     COLOR_YELLOW,
     COLOR_WHITE,
 )
-from subprocess import Popen, DEVNULL
+from subprocess import Popen, DEVNULL, run
 from time import sleep
 from datetime import datetime, timedelta
 
@@ -53,6 +53,13 @@ def main(stdscr):
         )
         stdscr.addstr("\n\n")
         stdscr.refresh()
+
+        # Clear any kestrokes in the queue
+        try:
+            while True:
+                stdscr.getkey()
+        except curses.error:
+            pass
 
         # Passcode entry loop
         passcode = ""
@@ -112,6 +119,16 @@ def main(stdscr):
             stdscr.bkgd(' ', SUCCESS)
             stdscr.addstr(0,0,fig_large.renderText("ACCESS GRANTED"),SUCCESS)
 
+        elif passcode == "24601":
+            stdscr.bkgd(' ', SUCCESS)
+            stdscr.addstr(0,0,fig_large.renderText("Shutdown Initiated"),SUCCESS)
+            stdscr.refresh()
+            playsound('crash')
+            run(['sudo', 'poweroff'])
+
+        elif passcode == "90210":
+            return
+
         elif passcode == "TOOLONG":
             playsound('error')
             errscreen("CODE TOO LONG")
@@ -131,3 +148,4 @@ def main(stdscr):
         sleep(2)
 
 curses.wrapper(main)
+print_figlet("Restart")
