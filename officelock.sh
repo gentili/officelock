@@ -21,6 +21,7 @@ workon officelock
 kill $PID
 killall -q aplay
 figlet Initializing
+aplay -q sounds/bootcomplete.wav
 
 while true; do
     ./officelock.py
