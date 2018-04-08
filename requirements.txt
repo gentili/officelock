@@ -1,1 +1,5 @@
+FBpyGIF==1.0.5
+Pillow==5.1.0
+playsound==1.2.2
 pyfiglet==0.7.5
+pyttsx==1.1
