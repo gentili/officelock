@@ -20,6 +20,7 @@ from FBpyGIF import fb
 from itertools import cycle
 import imghdr
 from threading import Timer, Event
+from random import randint
 
 fig_large = Figlet(
     font="cyberlarge",
@@ -30,20 +31,27 @@ fig_small = Figlet(
     justify="center",
 )
 
+def flushkeys(stdscr):
+    try:
+        while True:
+            stdscr.getkey()
+    except curses.error:
+        pass
+
 def gif_loop(gif, stdscr):
 
     imgs = fb.ready_gif(gif, True)
     event = Event()
+    flushkeys(stdscr)
     for img, dur in cycle(imgs):
         Timer(dur, lambda e:event.set(), [event]).start()
         fb.show_img(img)
-        event.wait()
-        event.clear()
         try:
-            stdscr.getkey()
-            return
+            return stdscr.getkey()
         except curses.error:
             pass
+        event.wait()
+        event.clear()
 
 def playsound(soundname):
     Popen(["aplay", "sounds/{}.wav".format(soundname)],
@@ -81,11 +89,7 @@ def main(stdscr):
         stdscr.refresh()
 
         # Clear any kestrokes in the queue
-        try:
-            while True:
-                stdscr.getkey()
-        except curses.error:
-            pass
+        flushkeys(stdscr)
 
         # Passcode entry loop
         passcode = ""
@@ -180,6 +184,30 @@ def main(stdscr):
         elif not passcode:
             playsound('error')
             errscreen("NO CODE ENTERED")
+
+        elif passcode == "12345":
+            playsound('warning')
+            stdscr.refresh()
+            curpic = randint(0,len(fullfilelist)-1)
+            while True:
+                char = gif_loop(
+                    fb.ready_img(fullfilelist[curpic], False),
+                    stdscr,
+                )
+                playsound('keypress')
+                if char == '\n':
+                    break;
+                elif char == '-':
+                    curpic = curpic - 1
+                    if curpic < 0:
+                        curpic = len(fullfilelist) - 1
+                elif char == '+':
+                    curpic = curpic + 1
+                    if curpic >= len(fullfilelist):
+                        curpic = 0
+
+            fb.black_scr()
+            continue
 
         elif passnum < len(fullfilelist):
             playsound('warning')
