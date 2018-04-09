@@ -30,19 +30,20 @@ fig_small = Figlet(
     justify="center",
 )
 
-def gif_loop(gif, duration):
+def gif_loop(gif, stdscr):
 
     imgs = fb.ready_gif(gif, True)
     event = Event()
-    starttime = datetime.now()
     for img, dur in cycle(imgs):
         Timer(dur, lambda e:event.set(), [event]).start()
         fb.show_img(img)
         event.wait()
         event.clear()
-        td = datetime.now() - starttime
-        if td > timedelta(seconds=duration):
+        try:
+            stdscr.getkey()
             return
+        except curses.error:
+            pass
 
 def playsound(soundname):
     Popen(["aplay", "sounds/{}.wav".format(soundname)],
@@ -52,6 +53,10 @@ def playsound(soundname):
           )
 
 def main(stdscr):
+    fullfilelist = []
+    for root, directories, filenames in os.walk('../../Pictures/'):
+        for filename in filenames:
+            fullfilelist.append(os.path.join(root,filename))
     curses.curs_set(False)
     curses.halfdelay(1)
     curses.init_pair(1, COLOR_GREEN, COLOR_BLACK)
@@ -65,7 +70,7 @@ def main(stdscr):
     while True:
         stdscr.bkgd(' ', 0)
         stdscr.clear()
-        stdscr.addstr(0,0,fig_large.renderText(
+        stdscr.addstr(4,0,fig_large.renderText(
             "Office Lock System Engaged"
         ),GREEN|A_BOLD)
         stdscr.addstr(
@@ -132,34 +137,37 @@ def main(stdscr):
         stdscr.clear()
         def errscreen(message):
             stdscr.bkgd(' ', ERROR)
-            stdscr.addstr(0,0,fig_large.renderText("ACCESS DENIED"),ERROR)
+            stdscr.addstr(7,0,fig_large.renderText("ACCESS DENIED"),ERROR)
             stdscr.addstr(fig_small.renderText(message),ERROR)
+
+        passnum = len(fullfilelist)
+        try:
+            passnum = int(passcode)
+        except Exception:
+            pass
+
 
         if passcode == "6858":
             playsound('accessgranted')
             stdscr.bkgd(' ', SUCCESS)
-            stdscr.addstr(0,0,fig_large.renderText("ACCESS GRANTED"),SUCCESS)
+            stdscr.addstr(7,0,fig_large.renderText("ACCESS GRANTED"),SUCCESS)
 
         elif passcode == "24601":
             stdscr.bkgd(' ', SUCCESS)
-            stdscr.addstr(0,0,fig_large.renderText("Shutdown Initiated"),SUCCESS)
+            stdscr.addstr(7,0,fig_large.renderText("Shutdown Initiated"),SUCCESS)
             stdscr.refresh()
             playsound('crash')
             run(['sudo', 'poweroff'])
 
-        elif passcode == "90210":
+        elif passcode == "438007":
+            stdscr.bkgd(' ', SUCCESS)
+            stdscr.addstr(7,0,fig_large.renderText("Reboot Initiated"),SUCCESS)
+            stdscr.refresh()
+            playsound('crash')
+            run(['sudo', 'reboot'])
+
+        elif passcode == "\t=":
             return
-
-        elif passcode == "911":
-            playsound('accessgranted')
-            gif_loop(
-                fb.ready_img('../../Pictures/computer_art/fire__r10061297101.gif', False),
-                # fb.ready_img('../../Pictures/computer_art/lonely.gif', False),
-                10,
-            )
-            fb.black_scr()
-            continue
-
 
         elif passcode == "TOOLONG":
             playsound('error')
@@ -173,24 +181,17 @@ def main(stdscr):
             playsound('error')
             errscreen("NO CODE ENTERED")
 
-        else:
-            errscreen(passcode)
-            fullfilelist = []
-            for root, directories, filenames in os.walk('../../Pictures/'):
-                for filename in filenames:
-                    fullfilelist.append(os.path.join(root,filename))
-            try:
-                passnum = int(passcode)
-                if passnum < len(fullfilelist):
-                    playsound('warning')
-                    gif_loop(
-                        fb.ready_img(fullfilelist[passnum], False),
-                        10,
-                    )
-                    fb.black_scr()
-            except Exception:
-                pass
+        elif passnum < len(fullfilelist):
+            playsound('warning')
+            stdscr.refresh()
+            gif_loop(
+                fb.ready_img(fullfilelist[passnum], False),
+                stdscr,
+            )
+            fb.black_scr()
+            continue
 
+        else:
             playsound('invalidcode')
             errscreen("INVALID CODE")
         stdscr.refresh()
