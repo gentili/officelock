@@ -44,6 +44,8 @@ def gif_loop(gif, stdscr):
     event = Event()
     flushkeys(stdscr)
     for img, dur in cycle(imgs):
+        if dur == 1:
+            dur = 0.001
         Timer(dur, lambda e:event.set(), [event]).start()
         fb.show_img(img)
         try:
