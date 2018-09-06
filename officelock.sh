@@ -4,6 +4,13 @@
 #   new-session -s officelock /home/pi/git/officelock/officelock.sh
 #
 # sudo systemctl edit getty@tty1.service
+# [Service]
+# ExecStart=
+# ExecStart=-/usr/bin/tmux attach -t officelock
+# StandardInput=tty
+# StandardOutput=tty
+# User=pi
+# Group=pi
 # sudo systemctl restart getty@tty1.service
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
