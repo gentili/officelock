@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-from pyfiglet import Figlet, figlet_format, print_figlet
+from pyfiglet import Figlet, print_figlet
 import os
-import getpass
 import curses
 from curses import (
-    A_BOLD, 
+    A_BOLD,
     A_NORMAL,
     COLOR_RED,
     COLOR_BLACK,
@@ -18,9 +17,9 @@ from time import sleep
 from datetime import datetime, timedelta
 from FBpyGIF import fb
 from itertools import cycle
-import imghdr
 from threading import Timer, Event
 from random import randint
+from pyicloud import PyiCloudService
 
 fig_large = Figlet(
     font="cyberlarge",
@@ -31,12 +30,14 @@ fig_small = Figlet(
     justify="center",
 )
 
+
 def flushkeys(stdscr):
     try:
         while True:
             stdscr.getkey()
     except curses.error:
         pass
+
 
 def gif_loop(gif, stdscr):
 
@@ -55,6 +56,7 @@ def gif_loop(gif, stdscr):
         event.wait()
         event.clear()
 
+
 def playsound(soundname):
     Popen(["aplay", "sounds/{}.wav".format(soundname)],
           stdin=DEVNULL,
@@ -62,11 +64,12 @@ def playsound(soundname):
           stderr=DEVNULL,
           )
 
+
 def main(stdscr):
     fullfilelist = []
     for root, directories, filenames in os.walk('../../Pictures/'):
         for filename in filenames:
-            fullfilelist.append(os.path.join(root,filename))
+            fullfilelist.append(os.path.join(root, filename))
     curses.curs_set(False)
     curses.halfdelay(1)
     curses.init_pair(1, COLOR_GREEN, COLOR_BLACK)
@@ -80,9 +83,9 @@ def main(stdscr):
     while True:
         stdscr.bkgd(' ', 0)
         stdscr.clear()
-        stdscr.addstr(4,0,fig_large.renderText(
+        stdscr.addstr(4, 0, fig_large.renderText(
             "Office Lock System Engaged"
-        ),GREEN|A_BOLD)
+        ), GREEN | A_BOLD)
         stdscr.addstr(
             fig_small.renderText("ENTER CODE"),
             GREEN
@@ -102,13 +105,13 @@ def main(stdscr):
                 try:
                     char = stdscr.getkey()
                     starttime = datetime.now()
-                except curses.error as e:
+                except curses.error:
                     td = datetime.now() - starttime
                     if passcode and td > timedelta(seconds=5):
                         passcode = "TIMEOUT"
                         char = '\n'
             if char == '\n':
-                break;
+                break
             if char == 'KEY_BACKSPACE':
                 if len(passcode) > 0:
                     passcode = passcode[:-1]
@@ -171,6 +174,15 @@ def main(stdscr):
             stdscr.refresh()
             playsound('crash')
             run(['sudo', 'reboot'])
+
+        elif passcode == "90210":
+            stdscr.bkgd(' ', SUCCESS)
+            stdscr.addstr(7,0,fig_large.renderText("Signalling BEAST"),SUCCESS)
+            stdscr.refresh()
+            api = PyiCloudService('gentili@mcpnet.ca')
+            iphone = next(i for i in api.devices if i.data['name'] == 'Beast')
+            iphone.play_sound()
+            stdscr.addstr(fig_small.renderText("Signal Sent"),SUCCESS)
 
         elif passcode == "\t=":
             return
